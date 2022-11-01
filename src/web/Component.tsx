@@ -12,8 +12,10 @@ const InputForm: React.FC = () => {
       'url': url,
       'template_type': templateType,
     };
-    console.dir(states);
-    await (window as any).preload.createArchive(states);
+    await (window as any).preload.createArchive(states)
+      .then((data: string[]) => {
+        (window as any).preload.saveFile(data[0], data[1]);
+      });
   }
 
   const handleImageFilePaths = (e: React.ChangeEvent<HTMLInputElement>) => {
