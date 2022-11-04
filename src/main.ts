@@ -1,7 +1,8 @@
 import path from 'node:path';
 import { BrowserWindow, app, ipcMain, IpcMainInvokeEvent, dialog } from 'electron';
 import * as fs from 'fs';
-const archiver = require('archiver');
+import * as archiver from 'archiver';
+import { exec } from 'node:child_process';
 
 // Hot Reload
 if (process.env.NODE_ENV === 'development') {
@@ -53,19 +54,8 @@ type dataJsonType = {
 
 const zipArchive = (targetDir: string) => {
   const zipPath = `${targetDir}.zip`;
-  const output = fs.createWriteStream(path.join(process.cwd(), zipPath));
-  const archive = archiver.create('zip', {
-    zlib: { level: 9 }
-  });
-
-  archive.pipe(output);
-  archive.glob(`${targetDir}/*`);
-  archive.finalize();
-}
-
-const save = async (dirPath: string, fileName: string) => {
   const savePath = dialog.showSaveDialogSync(mainWindow, {
-    defaultPath: fileName,
+    defaultPath: zipPath,
     buttonLabel: 'Save',
     filters: [
       { name: 'zip archive file', extensions: ['zip'] },
@@ -73,31 +63,30 @@ const save = async (dirPath: string, fileName: string) => {
     properties: ['createDirectory']
   });
 
-  if (savePath === undefined) {
-    try {
-      fs.rmSync(dirPath, { force: true, recursive: true });
-      fs.rmSync(dirPath.slice(0, -4), { force: true, recursive: true });
-      fs.rmdirSync(dirPath.slice(0, -4));
-    } catch (error) {
+  const isWin = process.platform === 'win32';
+  const tempPath = path.join(process.cwd(), targetDir);
+  let removeCommand: string;
 
-    }
-    return;
+  if (isWin) {
+    removeCommand = `rd /s /q ${tempPath}`;
+  } else {
+    removeCommand = `rm -rf ${tempPath}`;
   }
 
-  const rename = new Promise<void>((resolve) => {
-    fs.rename(dirPath, savePath, (error) => {
-      if (error) throw error;
+  if (savePath && tempPath !== '') {
+    const output = fs.createWriteStream(savePath);
+    const archive = archiver.create('zip', {
+      zlib: { level: 9 }
     });
-    resolve();
-  });
 
-  await rename.then(() => {
-    // fs.rm(dirPath.slice(0, -4), { force: true, recursive: true }, (error) => {
-    //   if (error) throw error;
-    // });
-  })
+    archive.pipe(output);
+    archive.glob(`${targetDir}/*`);
+    (
+      async () => await archive.finalize()
+        .then(() => exec(removeCommand))
+    )();
+  }
 }
-
 
 ipcMain.handle('create-archive', async (e: IpcMainInvokeEvent, data: rendererData): Promise<string[]> => {
   let dirPath = 'temp';
@@ -137,8 +126,4 @@ ipcMain.handle('create-archive', async (e: IpcMainInvokeEvent, data: rendererDat
     zipArchive(dirPath);
     resolve([path.resolve(dirPath + '.zip'), dirPath + '.zip']);
   });
-});
-
-ipcMain.handle('save-file', (e: IpcMainInvokeEvent, dirPath: string, fileName: string): void => {
-  save(dirPath, fileName);
 });

@@ -5,17 +5,14 @@ const InputForm: React.FC = () => {
   const [url, setUrl] = React.useState<string>('');
   const [templateType, setTemplateType] = React.useState<number>(0);
 
-  const createArchive = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const createArchive = async (e: React.MouseEvent<HTMLButtonElement>) => {
     const states = {
       'image_file_paths': imageFilePaths,
       'url': url,
       'template_type': templateType,
     };
     await (window as any).preload.createArchive(states)
-      .then((data: string[]) => {
-        (window as any).preload.saveFile(data[0], data[1]);
-      });
+      .then((data: string[]) => { });
   }
 
   const handleImageFilePaths = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -35,7 +32,7 @@ const InputForm: React.FC = () => {
   }
 
   return (
-    <form onSubmit={createArchive}>
+    <form>
       <p>
         Image:
         <input id="imageUpload" type="file" multiple onChange={handleImageFilePaths} accept="image/*" />
@@ -59,7 +56,7 @@ const InputForm: React.FC = () => {
         </select>
         {templateType}
       </p>
-      <button type="submit">Submit</button>
+      <button type="button" onClick={createArchive}>Submit</button>
     </form>
   )
 }
