@@ -45,8 +45,8 @@ const templateTypes = [
 ];
 
 type rendererData = {
-  image_file_paths: [];
-  url: string;
+  image_file_paths: string[];
+  urls: string[];
   template_type: number;
 };
 
@@ -83,7 +83,7 @@ const zipArchive = (targetDir: string) => {
     });
 
     archive.pipe(output);
-    archive.glob(`${targetDir}/*`);
+    archive.glob(`${targetDir}/*/*`);
     (async () =>
       await archive.finalize().then(() => removeTempDir(tempPath)))();
   }
@@ -103,14 +103,19 @@ const removeTempDir = (tempPath: string): void => {
 ipcMain.handle(
   "create-archive",
   async (e: IpcMainInvokeEvent, data: rendererData): Promise<string[]> => {
-    let dirPath = "temp";
+    const dirPath = "temp";
+    const imagesPath = `${dirPath}/images`;
+    const dataPath = `${dirPath}/data`;
 
-    const hrefs: hrefType[] = [
-      {
-        dataIndex: 0,
-        href: data.url,
-      },
-    ];
+    const hrefs: hrefType[] = [];
+
+    data.urls.map((v, k) => {
+      let href: hrefType = {
+        dataIndex: k,
+        href: v,
+      };
+      hrefs.push(href);
+    });
 
     const tapareas: tapareasType = {
       hrefs: hrefs,
@@ -124,6 +129,8 @@ ipcMain.handle(
     return new Promise((resolve) => {
       if (!fs.existsSync(dirPath)) {
         fs.mkdirSync(dirPath);
+        fs.mkdirSync(imagesPath);
+        fs.mkdirSync(dataPath);
       } else {
         fs.rmSync(dirPath, { force: true, recursive: true });
         fs.mkdirSync(dirPath);
@@ -131,11 +138,16 @@ ipcMain.handle(
       if (data.image_file_paths.length !== 0) {
         data.image_file_paths.map((image_file_path, index) => {
           const ext = path.extname(image_file_path);
-          fs.copyFile(image_file_path, `${dirPath}/${index}${ext}`, (error) => {
-            if (error) throw error;
-          });
+          fs.copyFile(
+            image_file_path,
+            `${imagesPath}/${index}${ext}`,
+            (error) => {
+              if (error) throw error;
+            }
+          );
+          console.log(process.cwd());
           fs.writeFile(
-            `${dirPath}/data.json`,
+            `${dataPath}/data.json`,
             JSON.stringify(dataJson, null, 2),
             (error) => {
               if (error) throw error;
