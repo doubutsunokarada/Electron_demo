@@ -1,12 +1,12 @@
 import React from 'react';
 import './App.css';
-import Component from './Component';
+import { InputForm } from './Form'
 
 export const App = () => {
   return (
     <div className="container">
       <h1>Demo App</h1>
-      <Component.InputForm />
+      <InputForm />
     </div>
   )
 }
