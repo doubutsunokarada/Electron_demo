@@ -2,4 +2,4 @@
 dist
 node_modules
 temp
-electron_demo-win32-x64
+__build

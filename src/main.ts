@@ -25,11 +25,11 @@ const createWindow = () => {
     width: 800,
     height: 600,
     webPreferences: {
-      preload: path.join(process.cwd(), "dist/preload.js"),
+      preload: path.join(__dirname, "./preload.js"),
     },
   });
 
-  mainWindow.loadFile(path.join(process.cwd(), "dist/index.html"));
+  mainWindow.loadFile(path.join(__dirname, "./index.html"));
 };
 
 app.whenReady().then(createWindow);
