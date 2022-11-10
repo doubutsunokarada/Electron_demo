@@ -15,3 +15,6 @@ $ npm -v
 
 ・Build<br>
 `$ npm run dev`<br>
+
+・インストーラの作成<br>
+`$ npx electron-builder -mwl`<br>
