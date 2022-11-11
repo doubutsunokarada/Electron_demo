@@ -54,22 +54,22 @@ export const InputForm: React.FC = () => {
     Array(templatesInfo[templateTypeName].urlMaxCount).fill("")
   );
 
-  const setImageFilePaths = (index: number, data: string) => {
+  const setImageFilePath = (index: number, data: string) => {
     imageFilePaths.current[index] = data;
   };
 
-  const setUrls = (index: number, data: string) => {
+  const setUrl = (index: number, data: string) => {
     urls.current[index] = data;
   };
 
   // Contexts for child component.
   const imageFileProps: ContextType = {
     maxCount: templatesInfo[templateTypeName].imageMaxCount,
-    callback: setImageFilePaths,
+    callback: setImageFilePath,
   };
   const urlProps: ContextType = {
     maxCount: templatesInfo[templateTypeName].urlMaxCount,
-    callback: setUrls,
+    callback: setUrl,
   };
 
   const createArchive = async (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -88,6 +88,29 @@ export const InputForm: React.FC = () => {
     setTemplateType(selectValue);
     setTemplateTypeName(templateTypeNames[selectValue]);
   };
+
+  React.useEffect(() => {
+    let newImageFilePaths: Array<string> = Array(
+      templatesInfo[templateTypeName].imageMaxCount
+    ).fill("");
+    let newUrls: Array<string> = Array(
+      templatesInfo[templateTypeName].urlMaxCount
+    ).fill("");
+    newImageFilePaths.map((v, k) => {
+      const prevImageFilePaths = [...imageFilePaths.current];
+      if (prevImageFilePaths[k] !== undefined) {
+        newImageFilePaths[k] = prevImageFilePaths[k];
+      }
+    });
+    newUrls.map((v, k) => {
+      const prevUrls = [...urls.current];
+      if (prevUrls[k] !== undefined) {
+        newUrls[k] = prevUrls[k];
+      }
+    });
+    imageFilePaths.current = newImageFilePaths;
+    urls.current = newUrls;
+  }, [templateType]);
 
   return (
     <form>
