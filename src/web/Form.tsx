@@ -78,9 +78,12 @@ export const InputForm: React.FC = () => {
       urls: urls.current,
       template_type: templateType,
     };
+    console.log((window as any).preload);
     await (window as any).preload
       .createArchive(states)
-      .then((data: string[]) => {});
+      .then((dirName: string) => {
+        (window as any).preload.toZip(dirName);
+      });
   };
 
   const handleTemplateType = (e: React.ChangeEvent<HTMLSelectElement>) => {

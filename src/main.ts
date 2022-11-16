@@ -8,7 +8,14 @@ import {
 } from "electron";
 import * as fs from "fs";
 import * as archiver from "archiver";
-import { exec } from "node:child_process";
+import { exec, execFile } from "node:child_process";
+import { configure, getLogger } from "log4js";
+
+// const appPath = app.getAppPath();
+let appPath: string;
+
+const isWin = process.platform === "win32";
+const isMac = process.platform === "darwin";
 
 // Hot Reload
 if (process.env.NODE_ENV === "development") {
@@ -16,7 +23,12 @@ if (process.env.NODE_ENV === "development") {
     rootPath: path.join(process.cwd(), "dist"),
     rules: [{ action: "app.relaunch" }],
   });
+  configure(path.join(app.getAppPath(), "log4js.config.json"));
+} else {
+  configure("./log4js.config.json");
 }
+
+const logger = getLogger();
 
 let mainWindow: BrowserWindow;
 
@@ -66,7 +78,7 @@ type dataJsonType = {
 
 const zipArchive = (targetDir: string) => {
   const zipPath = `${targetDir}.zip`;
-  const tempPath = path.join(process.cwd(), targetDir);
+  const tempPath = path.join(appPath, targetDir);
   const savePath = dialog.showSaveDialogSync(mainWindow, {
     defaultPath: zipPath,
     buttonLabel: "Save",
@@ -84,13 +96,16 @@ const zipArchive = (targetDir: string) => {
 
     archive.pipe(output);
     archive.glob(`${targetDir}/*/*`);
+    // archive.finalize();
+    // output.on("close", () => {
+    //   removeTempDir(tempPath);
+    // });
     (async () =>
       await archive.finalize().then(() => removeTempDir(tempPath)))();
   }
 };
 
 const removeTempDir = (tempPath: string): void => {
-  const isWin = process.platform === "win32";
   let command: string;
   if (isWin) {
     command = `rd /s /q ${tempPath}`;
@@ -102,10 +117,11 @@ const removeTempDir = (tempPath: string): void => {
 
 ipcMain.handle(
   "create-archive",
-  async (e: IpcMainInvokeEvent, data: rendererData): Promise<string[]> => {
-    const dirPath = "temp";
-    const imagesPath = `${dirPath}/images`;
-    const dataPath = `${dirPath}/data`;
+  async (e: IpcMainInvokeEvent, data: rendererData): Promise<string> => {
+    const dirName = "temp";
+    const dirPath = path.join(appPath, dirName);
+    const imagesPath = path.join(dirPath, "images");
+    const dataPath = path.join(dirPath, "data");
 
     const hrefs: hrefType[] = [];
 
@@ -127,36 +143,45 @@ ipcMain.handle(
     };
 
     return new Promise((resolve) => {
+      const errorHandler = (error: NodeJS.ErrnoException | null) => {
+        if (error) {
+          logger.error(`${error.name}: ${error.message}`);
+          throw error;
+        }
+      };
+
       if (!fs.existsSync(dirPath)) {
-        fs.mkdirSync(dirPath);
-        fs.mkdirSync(imagesPath);
-        fs.mkdirSync(dataPath);
+        fs.mkdir(dirPath, errorHandler);
+        fs.mkdir(imagesPath, errorHandler);
+        fs.mkdir(dataPath, errorHandler);
+        logger.info("mkdir success.");
       } else {
         fs.rmSync(dirPath, { force: true, recursive: true });
-        fs.mkdirSync(dirPath);
+        fs.mkdir(dirPath, errorHandler);
+        fs.mkdir(imagesPath, errorHandler);
+        fs.mkdir(dataPath, errorHandler);
+        logger.info("mkdir success.");
       }
       if (data.image_file_paths.length !== 0) {
         data.image_file_paths.map((image_file_path, index) => {
           const ext = path.extname(image_file_path);
           fs.copyFile(
             image_file_path,
-            `${imagesPath}/${index}${ext}`,
-            (error) => {
-              if (error) throw error;
-            }
+            path.join(imagesPath, `${index}${ext}`),
+            errorHandler
           );
-          console.log(process.cwd());
           fs.writeFile(
-            `${dataPath}/data.json`,
+            path.join(dataPath, "data.json"),
             JSON.stringify(dataJson, null, 2),
-            (error) => {
-              if (error) throw error;
-            }
+            errorHandler
           );
         });
       }
-      zipArchive(dirPath);
-      resolve([path.resolve(dirPath + ".zip"), dirPath + ".zip"]);
+      resolve(dirName);
     });
   }
+);
+
+ipcMain.handle("to-zip", (e: IpcMainInvokeEvent, dirName: string) =>
+  zipArchive(dirName)
 );
