@@ -10,7 +10,9 @@
     "dev:electron": "wait-on ./dist/index.html ./dist/main.js && electron .",
     "build:clean": "rimraf build release",
     "build:electron": "cross-env NODE_ENV=\"production\" webpack --progress",
-    "predev": "rimraf dist"
+    "predev": "rimraf dist",
+    "package:win": "rimraf __build && run-s build:* && electron-builder -w --x64",
+    "package:mac": "rimraf __build && run-s build:* && electron-builder -m --x64"
   },
   "repository": {
     "type": "git",
@@ -25,6 +27,7 @@
   "devDependencies": {
     "@types/archiver": "^5.3.1",
     "@types/electron-builder": "^2.8.0",
+    "@types/log4js": "^2.3.5",
     "@types/node": "^18.11.5",
     "@types/react": "^18.0.22",
     "@types/react-dom": "^18.0.7",
@@ -36,6 +39,7 @@
     "electron-nice-auto-reload": "^1.3.0",
     "html-webpack-plugin": "^5.5.0",
     "keyv": "^4.5.1",
+    "log4js": "^6.7.0",
     "mini-css-extract-plugin": "^2.6.1",
     "npm-run-all": "^4.1.5",
     "rimraf": "^3.0.2",
@@ -58,6 +62,7 @@
     },
     "extraMetadata": {
       "main": "./dist/main.js"
-    }
+    },
+    "extraFiles": "log4js.config.json"
   }
 }

@@ -9,6 +9,7 @@ import {
 import * as fs from "fs";
 import * as archiver from "archiver";
 import { exec } from "node:child_process";
+import { configure, getLogger } from "log4js";
 
 // Hot Reload
 if (process.env.NODE_ENV === "development") {
@@ -16,7 +17,12 @@ if (process.env.NODE_ENV === "development") {
     rootPath: path.join(process.cwd(), "dist"),
     rules: [{ action: "app.relaunch" }],
   });
+  configure(path.join(app.getAppPath(), "log4js.config.json"));
+} else {
+  configure("./log4js.config.json");
 }
+
+const logger = getLogger();
 
 let mainWindow: BrowserWindow;
 

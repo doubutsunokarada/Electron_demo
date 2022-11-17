@@ -1,0 +1,48 @@
+{
+  "appenders": {
+    "console": {
+      "type": "console",
+      "layout": {
+        "type": "pattern",
+        "pattern": "[%d{yyyy-MM-dd hh:mm:ss.SSS}] [%p] %m"
+      }
+    },
+    "debug": {
+      "type": "file",
+      "filename": "logs/debug.log",
+      "layout": {
+        "type": "pattern",
+        "pattern": "[%d{yyyy-MM-dd hh:mm:ss.SSS}] [%p] %m"
+      }
+    },
+    "info_raw": {
+      "type": "file",
+      "filename": "logs/app.log",
+      "layout": {
+        "type": "pattern",
+        "pattern": "[%d{yyyy-MM-dd hh:mm:ss.SSS}] [%p] %m"
+      }
+    },
+    "info": { "type": "logLevelFilter", "appender": "info_raw", "level": "info" },
+    "error_raw": {
+      "type": "file",
+      "filename": "logs/error.log",
+      "layout": {
+        "type": "pattern",
+        "pattern": "[%d{yyyy-MM-dd hh:mm:ss.SSS}] [%p] %m%n%f %l %o%n%s"
+      }
+    },
+    "error": {
+      "type": "logLevelFilter",
+      "appender": "error_raw",
+      "level": "error"
+    }
+  },
+  "categories": {
+    "default": {
+      "appenders": ["console", "info", "debug", "error"],
+      "level": "debug",
+      "enableCallStack": true
+    }
+  }
+}
