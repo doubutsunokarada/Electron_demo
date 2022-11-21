@@ -8,8 +8,9 @@ import {
 } from "electron";
 import * as fs from "fs";
 import * as archiver from "archiver";
-import { exec } from "node:child_process";
+import { exec, execFile } from "node:child_process";
 import { configure, getLogger } from "log4js";
+import log from "electron-log";
 
 // Hot Reload
 if (process.env.NODE_ENV === "development") {
@@ -18,11 +19,15 @@ if (process.env.NODE_ENV === "development") {
     rules: [{ action: "app.relaunch" }],
   });
   configure(path.join(app.getAppPath(), "log4js.config.json"));
-} else {
-  configure("./log4js.config.json");
 }
 
-const logger = getLogger();
+const isMac = process.platform === "darwin";
+const isWin = process.platform === "win32";
+
+log.info("test log");
+log.info("cwd: " + process.cwd());
+
+// const logger = getLogger();
 
 let mainWindow: BrowserWindow;
 
@@ -71,8 +76,11 @@ type dataJsonType = {
 };
 
 const zipArchive = (targetDir: string) => {
+  log.info("zip archive");
   const zipPath = `${targetDir}.zip`;
+  // const tempPath = path.join(process.cwd(), targetDir);
   const tempPath = path.join(process.cwd(), targetDir);
+  log.info(`temp path: ${tempPath}`);
   const savePath = dialog.showSaveDialogSync(mainWindow, {
     defaultPath: zipPath,
     buttonLabel: "Save",
@@ -89,27 +97,41 @@ const zipArchive = (targetDir: string) => {
     });
 
     archive.pipe(output);
+    log.info(`target directory: ${targetDir}`);
     archive.glob(`${targetDir}/*/*`);
     (async () =>
-      await archive.finalize().then(() => removeTempDir(tempPath)))();
+      await archive
+        .finalize()
+        .then(() => {
+          log.info("archive finalize.");
+          removeTempDir(tempPath);
+        })
+        .finally(() => log.info("finally")))();
   }
 };
 
 const removeTempDir = (tempPath: string): void => {
-  const isWin = process.platform === "win32";
-  let command: string;
+  log.info(`rmdir current working directory: ${process.cwd()}`);
+  log.info(`rmdir temp path: ${tempPath}`);
   if (isWin) {
-    command = `rd /s /q ${tempPath}`;
+    execFile("rd", ["/s", "/q", tempPath]);
   } else {
-    command = `rm -rf ${tempPath}`;
+    execFile("rm", ["-rf", tempPath]);
   }
-  exec(command);
 };
 
 ipcMain.handle(
   "create-archive",
   async (e: IpcMainInvokeEvent, data: rendererData): Promise<string[]> => {
-    const dirPath = "temp";
+    // const dirPath = isMac ? "/Applications/demo_app.app/temp" : "temp";
+    const dirName: string = "temp";
+    let dirPath: string = "temp";
+    if (isMac) {
+      process.chdir("/Applications/demo_app.app/Contents");
+      log.info("current working directory: " + process.cwd());
+      dirPath = path.join(process.cwd(), dirName);
+    }
+    log.info(`temp directory path: ${dirPath}`);
     const imagesPath = `${dirPath}/images`;
     const dataPath = `${dirPath}/data`;
 
@@ -161,7 +183,7 @@ ipcMain.handle(
           );
         });
       }
-      zipArchive(dirPath);
+      zipArchive(dirName);
       resolve([path.resolve(dirPath + ".zip"), dirPath + ".zip"]);
     });
   }
