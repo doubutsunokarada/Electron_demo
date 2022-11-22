@@ -8,8 +8,7 @@ import {
 } from "electron";
 import * as fs from "fs";
 import * as archiver from "archiver";
-import { exec, execFile } from "node:child_process";
-import { configure, getLogger } from "log4js";
+import { execFile, ExecFileException } from "node:child_process";
 import log from "electron-log";
 
 // Hot Reload
@@ -18,16 +17,12 @@ if (process.env.NODE_ENV === "development") {
     rootPath: path.join(process.cwd(), "dist"),
     rules: [{ action: "app.relaunch" }],
   });
-  configure(path.join(app.getAppPath(), "log4js.config.json"));
+} else {
+  process.chdir(app.getPath("userData"));
 }
 
 const isMac = process.platform === "darwin";
 const isWin = process.platform === "win32";
-
-log.info("test log");
-log.info("cwd: " + process.cwd());
-
-// const logger = getLogger();
 
 let mainWindow: BrowserWindow;
 
@@ -75,10 +70,23 @@ type dataJsonType = {
   tapareas: tapareasType;
 };
 
+const execCallback = (
+  error: ExecFileException | null,
+  stdout: string,
+  stderr: string
+) => {
+  log.info(stdout);
+  if (error) {
+    log.error(
+      `rmdir error occurred. ${error.code}: ${error.message}\nstack: ${error.stack}`
+    );
+    throw error;
+  }
+};
+
 const zipArchive = (targetDir: string) => {
   log.info("zip archive");
   const zipPath = `${targetDir}.zip`;
-  // const tempPath = path.join(process.cwd(), targetDir);
   const tempPath = path.join(process.cwd(), targetDir);
   log.info(`temp path: ${tempPath}`);
   const savePath = dialog.showSaveDialogSync(mainWindow, {
@@ -110,28 +118,19 @@ const zipArchive = (targetDir: string) => {
   }
 };
 
-const removeTempDir = (tempPath: string): void => {
-  log.info(`rmdir current working directory: ${process.cwd()}`);
-  log.info(`rmdir temp path: ${tempPath}`);
+const removeTempDir = (tempPath: string) => {
   if (isWin) {
-    execFile("rd", ["/s", "/q", tempPath]);
-  } else {
-    execFile("rm", ["-rf", tempPath]);
+    execFile("rd", ["/s", "/q", tempPath], { shell: true }, execCallback);
+  } else if (isMac) {
+    execFile("rm", ["-rf", tempPath], { shell: true }, execCallback);
   }
 };
 
 ipcMain.handle(
   "create-archive",
   async (e: IpcMainInvokeEvent, data: rendererData): Promise<string[]> => {
-    // const dirPath = isMac ? "/Applications/demo_app.app/temp" : "temp";
-    const dirName: string = "temp";
-    let dirPath: string = "temp";
-    if (isMac) {
-      process.chdir("/Applications/demo_app.app/Contents");
-      log.info("current working directory: " + process.cwd());
-      dirPath = path.join(process.cwd(), dirName);
-    }
-    log.info(`temp directory path: ${dirPath}`);
+    const dirName = "temp";
+    const dirPath = path.join(process.cwd(), dirName);
     const imagesPath = `${dirPath}/images`;
     const dataPath = `${dirPath}/data`;
 
@@ -154,6 +153,15 @@ ipcMain.handle(
       tapareas: tapareas,
     };
 
+    const noParamCallback = (error: NodeJS.ErrnoException | null) => {
+      if (error) {
+        log.error(
+          `File copy or write error occurred. ${error.code}: ${error.message}\nstack: ${error.stack}`
+        );
+        throw error;
+      }
+    };
+
     return new Promise((resolve) => {
       if (!fs.existsSync(dirPath)) {
         fs.mkdirSync(dirPath);
@@ -169,17 +177,13 @@ ipcMain.handle(
           fs.copyFile(
             image_file_path,
             `${imagesPath}/${index}${ext}`,
-            (error) => {
-              if (error) throw error;
-            }
+            noParamCallback
           );
           console.log(process.cwd());
           fs.writeFile(
             `${dataPath}/data.json`,
             JSON.stringify(dataJson, null, 2),
-            (error) => {
-              if (error) throw error;
-            }
+            noParamCallback
           );
         });
       }
