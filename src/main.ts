@@ -116,11 +116,13 @@ const zipArchive = (targetDir: string) => {
 };
 
 const removeTempDir = (tempPath: string) => {
+  log.info("remove directory is starting.");
   if (isWin) {
     execFile("rd", ["/s", "/q", tempPath], { shell: true }, execCallback);
   } else if (isMac) {
     execFile("rm", ["-rf", tempPath], { shell: true }, execCallback);
   }
+  log.info("remove directory is completed.");
 };
 
 ipcMain.handle(
