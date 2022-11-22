@@ -85,10 +85,9 @@ const execCallback = (
 };
 
 const zipArchive = (targetDir: string) => {
-  log.info("zip archive");
+  log.info("archive start");
   const zipPath = `${targetDir}.zip`;
   const tempPath = path.join(process.cwd(), targetDir);
-  log.info(`temp path: ${tempPath}`);
   const savePath = dialog.showSaveDialogSync(mainWindow, {
     defaultPath: zipPath,
     buttonLabel: "Save",
@@ -105,7 +104,6 @@ const zipArchive = (targetDir: string) => {
     });
 
     archive.pipe(output);
-    log.info(`target directory: ${targetDir}`);
     archive.glob(`${targetDir}/*/*`);
     (async () =>
       await archive
@@ -113,8 +111,7 @@ const zipArchive = (targetDir: string) => {
         .then(() => {
           log.info("archive finalize.");
           removeTempDir(tempPath);
-        })
-        .finally(() => log.info("finally")))();
+        }))();
   }
 };
 
