@@ -89,7 +89,6 @@ const zipArchive = (targetDir: string) => {
   log.info("archive start");
   const zipPath = `${targetDir}.zip`;
   const tempPath = path.join(process.cwd(), targetDir);
-  log.info(`tempPath: ${tempPath}`);
   const savePath = dialog.showSaveDialogSync(mainWindow, {
     defaultPath: zipPath,
     buttonLabel: "Save",
