@@ -17,4 +17,9 @@ $ npm -v
 `$ npm run dev`<br>
 
 ・インストーラの作成<br>
-`$ npx electron-builder -mwl`<br>
+```
+Windows:
+$ npm run package:win
+MacOS:
+$ npm run package:mac
+```
