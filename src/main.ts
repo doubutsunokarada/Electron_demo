@@ -75,7 +75,8 @@ const execCallback = (
   stdout: string,
   stderr: string
 ) => {
-  log.info(stdout);
+  log.info(`rmdir stdout: ${stdout ?? 'None.'}`);
+  log.info(`rmdir stderr: ${stderr ?? 'None.'}`);
   if (error) {
     log.error(
       `rmdir error occurred. ${error.code}: ${error.message}\nstack: ${error.stack}`
@@ -88,6 +89,7 @@ const zipArchive = (targetDir: string) => {
   log.info("archive start");
   const zipPath = `${targetDir}.zip`;
   const tempPath = path.join(process.cwd(), targetDir);
+  log.info(`tempPath: ${tempPath}`);
   const savePath = dialog.showSaveDialogSync(mainWindow, {
     defaultPath: zipPath,
     buttonLabel: "Save",
