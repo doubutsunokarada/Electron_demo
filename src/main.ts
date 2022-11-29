@@ -75,8 +75,8 @@ const execCallback = (
   stdout: string,
   stderr: string
 ) => {
-  log.info(`rmdir stdout: ${stdout ?? 'None.'}`);
-  log.info(`rmdir stderr: ${stderr ?? 'None.'}`);
+  log.info(`rmdir stdout: ${stdout ?? "None."}`);
+  log.info(`rmdir stderr: ${stderr ?? "None."}`);
   if (error) {
     log.error(
       `rmdir error occurred. ${error.code}: ${error.message}\nstack: ${error.stack}`
@@ -107,12 +107,10 @@ const zipArchive = (targetDir: string) => {
     archive.pipe(output);
     archive.glob(`${targetDir}/*/*`);
     (async () =>
-      await archive
-        .finalize()
-        .then(() => {
-          log.info("archive finalize.");
-          removeTempDir(tempPath);
-        }))();
+      await archive.finalize().then(() => {
+        log.info("archive finalize.");
+        removeTempDir(tempPath);
+      }))();
   }
 };
 
@@ -121,7 +119,13 @@ const removeTempDir = (tempPath: string) => {
   if (isWin) {
     execFile("rd", ["/s", "/q", tempPath], { shell: true }, execCallback);
   } else if (isMac) {
-    execFile("rm", ["-rf", tempPath], { shell: true }, execCallback);
+    log.info("tempPath:" + tempPath);
+    execFile(
+      "rm",
+      ["-rf", '"' + tempPath + '"'],
+      { shell: true },
+      execCallback
+    );
   }
   log.info("remove directory is completed.");
 };

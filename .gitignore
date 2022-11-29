@@ -4,3 +4,4 @@ node_modules
 temp
 __build
 logs
+.DS_Store
