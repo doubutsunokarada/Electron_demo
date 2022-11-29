@@ -75,8 +75,8 @@ const execCallback = (
   stdout: string,
   stderr: string
 ) => {
-  log.info(`rmdir stdout: ${stdout ?? "None."}`);
-  log.info(`rmdir stderr: ${stderr ?? "None."}`);
+  log.info(`rmdir stdout: ${stdout !== "" ? stdout : "None."}`);
+  log.info(`rmdir stderr: ${stderr !== "" ? stderr : "None."}`);
   if (error) {
     log.error(
       `rmdir error occurred. ${error.code}: ${error.message}\nstack: ${error.stack}`
@@ -117,9 +117,13 @@ const zipArchive = (targetDir: string) => {
 const removeTempDir = (tempPath: string) => {
   log.info("remove directory is starting.");
   if (isWin) {
-    execFile("rd", ["/s", "/q", tempPath], { shell: true }, execCallback);
+    execFile(
+      "rd",
+      ["/s", "/q", '"' + tempPath + '"'],
+      { shell: true },
+      execCallback
+    );
   } else if (isMac) {
-    log.info("tempPath:" + tempPath);
     execFile(
       "rm",
       ["-rf", '"' + tempPath + '"'],
